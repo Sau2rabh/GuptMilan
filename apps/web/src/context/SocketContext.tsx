@@ -17,14 +17,22 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    const socketInstance = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000', {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    console.log('📡 Attempting connection to:', apiUrl);
+
+    const socketInstance = io(apiUrl, {
       withCredentials: true,
       autoConnect: true,
+      transports: ['websocket', 'polling'], // Try WebSocket first — more reliable on Windows
     });
 
     socketInstance.on('connect', () => {
       console.log('✅ Connected to signaling server');
       setConnected(true);
+    });
+
+    socketInstance.on('connect_error', (err) => {
+      console.error('❌ Socket connection error:', err.message);
     });
 
     socketInstance.on('disconnect', () => {

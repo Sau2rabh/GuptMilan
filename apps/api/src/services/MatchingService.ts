@@ -39,39 +39,42 @@ export class MatchingService {
       nickname,
     });
 
-    // Try matching by tags first
-    for (const tag of tags) {
-      const sanitizedTag = tag.toLowerCase().trim();
-      if (!sanitizedTag) continue;
+    // If tags are provided, strictly match by tags
+    if (tags.length > 0) {
+      for (const tag of tags) {
+        const sanitizedTag = tag.toLowerCase().trim();
+        if (!sanitizedTag) continue;
 
-      const queueKey = `${this.QUEUE_PREFIX}:${type}:${sanitizedTag}`;
-      const partnerSocketId = await redisClient.sPop(queueKey);
+        const queueKey = `${this.QUEUE_PREFIX}:${type}:${sanitizedTag}`;
+        const partnerSocketId = await redisClient.sPop(queueKey);
 
-      if (partnerSocketId && partnerSocketId !== socketId) {
-        // Double check if partner is still valid/waiting
-        const partnerActive = await this.isUserWaiting(partnerSocketId);
-        if (partnerActive) {
-          return this.matchUsers(socketId, partnerSocketId, session);
+        if (partnerSocketId && partnerSocketId !== socketId) {
+          const partnerActive = await this.isUserWaiting(partnerSocketId);
+          if (partnerActive) {
+            return this.matchUsers(socketId, partnerSocketId, session);
+          }
         }
       }
+      
+      // No tag match found, add user to tag queues only
+      await Promise.all(
+        tags.map(tag => redisClient.sAdd(`${this.QUEUE_PREFIX}:${type}:${tag.toLowerCase().trim()}`, socketId))
+      );
+    } else {
+      // No tags provided, use global queue
+      const globalQueueKey = `${this.QUEUE_PREFIX}:${type}:global`;
+      const randomPartnerId = await redisClient.sPop(globalQueueKey);
+
+      if (randomPartnerId && randomPartnerId !== socketId) {
+        const partnerActive = await this.isUserWaiting(randomPartnerId);
+        if (partnerActive) {
+          return this.matchUsers(socketId, randomPartnerId, session);
+        }
+      }
+
+      // No match found, add to global queue
+      await redisClient.sAdd(globalQueueKey, socketId);
     }
-
-    // Random fallback
-    const globalQueueKey = `${this.QUEUE_PREFIX}:${type}:global`;
-    const randomPartnerId = await redisClient.sPop(globalQueueKey);
-
-    if (randomPartnerId && randomPartnerId !== socketId) {
-       const partnerActive = await this.isUserWaiting(randomPartnerId);
-       if (partnerActive) {
-         return this.matchUsers(socketId, randomPartnerId, session);
-       }
-    }
-
-    // No match found, put user in queues
-    await Promise.all([
-      ...tags.map(tag => redisClient.sAdd(`${this.QUEUE_PREFIX}:${type}:${tag.toLowerCase().trim()}`, socketId)),
-      redisClient.sAdd(globalQueueKey, socketId)
-    ]);
 
     return null;
   }

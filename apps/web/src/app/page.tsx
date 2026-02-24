@@ -13,7 +13,9 @@ import {
   ShieldCheck, 
   Zap, 
   Settings, 
-  User 
+  User,
+  MapPin,
+  Loader2
 } from "lucide-react";
 import { 
   Dialog, 
@@ -37,6 +39,8 @@ export default function LandingPage() {
 
   // Settings State
   const [nickname, setNickname] = useState("Stranger");
+  const [location, setLocation] = useState("");
+  const [isFetchingLocation, setIsFetchingLocation] = useState(false);
   const [privacyMode, setPrivacyMode] = useState(false);
   const [autoClear, setAutoClear] = useState(false);
 
@@ -63,6 +67,38 @@ export default function LandingPage() {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, []);
+
+  const fetchLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser");
+      return;
+    }
+
+    setIsFetchingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10&addressdetails=1`
+          );
+          const data = await response.json();
+          const city = data.address.city || data.address.town || data.address.village || data.address.state || "Unknown";
+          const country = data.address.country || "";
+          setLocation(`${city}${country ? `, ${country}` : ""}`);
+        } catch (error) {
+          console.error("Error fetching location:", error);
+          setLocation("Location unavailable");
+        } finally {
+          setIsFetchingLocation(false);
+        }
+      },
+      (error) => {
+        console.error("Geolocation error:", error);
+        setIsFetchingLocation(false);
+      }
+    );
+  };
 
   const saveSettings = (newNick: string, newPrivacy: boolean, newAuto: boolean) => {
     setNickname(newNick);
@@ -133,24 +169,7 @@ export default function LandingPage() {
               </DialogTitle>
             </DialogHeader>
             <div className="py-6 space-y-6">
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-sm font-semibold text-neutral-400 px-1">
-                  <User className="w-4 h-4" />
-                  IDENTITY
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="nickname" className="text-xs text-neutral-500">Your Nickname (Temporary)</Label>
-                  <Input 
-                    id="nickname" 
-                    value={nickname} 
-                    onChange={(e) => saveSettings(e.target.value, privacyMode, autoClear)}
-                    placeholder="Stranger"
-                    className="bg-white/5 border-white/10 focus:border-blue-500/50 h-11"
-                  />
-                </div>
-              </div>
 
-              <Separator className="bg-white/5" />
 
               <div className="space-y-4">
                 <div className="flex items-center gap-2 text-sm font-semibold text-neutral-400 px-1">
@@ -232,60 +251,101 @@ export default function LandingPage() {
         <div className="relative group w-full max-w-md mx-auto">
           <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-3xl blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200" />
           <Card className="relative border-white/10 bg-[#0f1117]/80 backdrop-blur-2xl shadow-2xl rounded-3xl overflow-hidden">
-            <CardContent className="p-6 sm:p-10 space-y-8 sm:space-y-10">
-              <div className="space-y-5">
-                <label className="text-sm sm:text-base font-semibold text-neutral-200 flex items-center gap-2">
+            <CardContent className="p-5 sm:p-8 space-y-5 sm:space-y-6">
+              {/* Profile Details Section */}
+              <div className="space-y-3 pt-1">
+                <div className="flex items-center gap-2 text-[10px] font-bold text-blue-500/80 uppercase tracking-[0.2em] px-1">
+                  <User className="w-3 h-3" />
+                  Your Profile
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="nickname" className="text-[10px] text-neutral-500 ml-1">Nickname</Label>
+                    <div className="relative group/input">
+                      <Input 
+                        id="nickname"
+                        value={nickname}
+                        onChange={(e) => saveSettings(e.target.value, privacyMode, autoClear)}
+                        placeholder="Stranger"
+                        className="h-10 bg-white/5 border-white/10 focus:border-blue-500/50 transition-all rounded-xl pl-9 text-sm"
+                      />
+                      <User className="w-3.5 h-3.5 text-neutral-500 absolute left-3 top-1/2 -translate-y-1/2 group-focus-within/input:text-blue-500 transition-colors" />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] text-neutral-500 ml-1">Location</Label>
+                    <div className="relative group/input">
+                      <Input 
+                        readOnly
+                        value={location}
+                        onClick={fetchLocation}
+                        placeholder="Click to fetch..."
+                        className="h-10 bg-white/5 border-white/10 focus:border-blue-500/50 transition-all rounded-xl pl-9 cursor-pointer text-sm"
+                      />
+                      <MapPin className="w-3.5 h-3.5 text-neutral-500 absolute left-3 top-1/2 -translate-y-1/2 group-focus-within/input:text-blue-500 transition-colors" />
+                      {isFetchingLocation && (
+                        <Loader2 className="w-3 h-3 text-blue-500 absolute right-3 top-1/2 -translate-y-1/2 animate-spin" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <Separator className="bg-white/5 opacity-50" />
+
+              <div className="space-y-4">
+                <label className="text-xs sm:text-sm font-semibold text-neutral-200 flex items-center gap-2">
                   Talk about what you love
                 </label>
-                <form onSubmit={addInterest} className="flex gap-2 sm:gap-3">
+                <form onSubmit={addInterest} className="flex gap-2">
                   <Input
                     placeholder="e.g. Gaming, Music..."
                     value={currentInterest}
                     onChange={(e) => setCurrentInterest(e.target.value)}
-                    className="h-11 sm:h-12 bg-white/5 border-white/10 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all text-sm sm:text-base rounded-xl"
+                    className="h-10 bg-white/5 border-white/10 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all text-sm rounded-xl"
                   />
-                  <Button type="submit" variant="secondary" className="h-11 sm:h-12 px-4 sm:px-6 rounded-xl font-semibold hover:bg-white hover:text-black transition-all bg-white/10 text-white border-0 text-sm">
+                  <Button type="submit" variant="secondary" className="h-10 px-4 rounded-xl font-semibold hover:bg-white hover:text-black transition-all bg-white/10 text-white border-0 text-sm">
                     Add
                   </Button>
                 </form>
 
-                <div className="flex flex-wrap gap-2 min-h-[40px]">
+                <div className="flex flex-wrap gap-2 min-h-[32px]">
                   {interests.length === 0 && (
-                    <span className="text-[13px] text-neutral-500 italic mt-2">No interests added. Matched randomly.</span>
+                    <span className="text-[11px] text-neutral-500 italic mt-1">No interests added. Matched randomly.</span>
                   )}
                   {interests.map((tag) => (
                     <Badge 
                       key={tag} 
-                      className="pl-3 pr-1 py-1.5 flex items-center gap-1.5 bg-blue-500/15 text-blue-300 border border-blue-500/20 hover:bg-blue-500/25 transition-all cursor-default rounded-lg text-xs font-medium"
+                      className="pl-2 pr-1 py-1 flex items-center gap-1 bg-blue-500/15 text-blue-300 border border-blue-500/20 hover:bg-blue-500/25 transition-all cursor-default rounded-lg text-[10px] font-medium"
                     >
                       {tag}
                       <button 
                         onClick={() => removeInterest(tag)}
-                        className="hover:bg-blue-500/30 rounded-md p-1 transition-colors"
+                        className="hover:bg-blue-500/30 rounded-md p-0.5 transition-colors"
                       >
-                        <X className="w-3 h-3" />
+                        <X className="w-2.5 h-2.5" />
                       </button>
                     </Badge>
                   ))}
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 sm:gap-5">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <Button 
                   onClick={() => setMode('text')}
-                  className="h-20 sm:h-32 flex flex-col gap-2 sm:gap-4 rounded-2xl transition-all duration-300 border group/btn animate-glow-blue-1"
+                  className="h-20 sm:h-28 flex flex-col gap-1.5 sm:gap-3 rounded-2xl transition-all duration-300 border group/btn animate-glow-blue-1"
                   variant="ghost"
                 >
-                  <MessageSquare className="w-5 h-5 sm:w-8 sm:h-8 text-neutral-400 group-hover/btn:text-white group-hover/btn:scale-110 transition-all duration-300" />
-                  <span className="font-semibold text-xs sm:text-base text-neutral-300 group-hover/btn:text-white">Text Chat</span>
+                  <MessageSquare className="w-5 h-5 sm:w-7 sm:h-7 text-neutral-400 group-hover/btn:text-white group-hover/btn:scale-110 transition-all duration-300" />
+                  <span className="font-semibold text-xs sm:text-sm text-neutral-300 group-hover/btn:text-white">Text Chat</span>
                 </Button>
                 <Button 
                   onClick={() => setMode('video')}
-                  className="h-20 sm:h-32 flex flex-col gap-2 sm:gap-4 rounded-2xl transition-all duration-300 border group/btn animate-glow-blue-2"
+                  className="h-20 sm:h-28 flex flex-col gap-1.5 sm:gap-3 rounded-2xl transition-all duration-300 border group/btn animate-glow-blue-2"
                   variant="ghost"
                 >
-                  <Video className="w-5 h-5 sm:w-8 sm:h-8 text-neutral-400 group-hover/btn:text-white group-hover/btn:scale-110 transition-all duration-300" />
-                  <span className="font-semibold text-xs sm:text-base text-neutral-300 group-hover/btn:text-white">Video Chat</span>
+                  <Video className="w-5 h-5 sm:w-7 sm:h-7 text-neutral-400 group-hover/btn:text-white group-hover/btn:scale-110 transition-all duration-300" />
+                  <span className="font-semibold text-xs sm:text-sm text-neutral-300 group-hover/btn:text-white">Video Chat</span>
                 </Button>
               </div>
 

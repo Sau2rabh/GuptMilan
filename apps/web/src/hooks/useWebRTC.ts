@@ -143,12 +143,12 @@ export const useWebRTC = ({ type, nickname = 'Stranger', onPartnerLeft, onMatchF
     socket.emit('find_partner', { type, tags, nickname });
   };
 
-  const nextPartner = () => {
+  const nextPartner = useCallback(() => {
     if (!socket) return;
     socket.emit('next_partner');
     cleanup();
     setIsMatching(true);
-  };
+  }, [socket, cleanup]);
 
   return { localStream, remoteStream, isMatching, partnerId, findPartner, nextPartner };
 };

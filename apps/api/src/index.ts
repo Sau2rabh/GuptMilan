@@ -10,6 +10,15 @@ import { connectMongoDB } from './services/db';
 
 dotenv.config();
 
+const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+// Allow both localhost and 127.0.0.1 variants to handle Windows IPv4/IPv6 resolution
+const allowedOrigins = [
+  clientUrl,
+  clientUrl.replace('localhost', '127.0.0.1'),
+  clientUrl.replace('127.0.0.1', 'localhost'),
+];
+console.log('🌍 CORS allowed origins:', allowedOrigins);
+
 const app = express();
 const httpServer = createServer(app);
 
@@ -22,7 +31,7 @@ app.use(
 
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:3000',
+    origin: allowedOrigins,
     methods: ['GET', 'POST'],
     credentials: true,
   })
@@ -33,7 +42,7 @@ app.use(express.json());
 // Initialize Socket.io
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:3000',
+    origin: allowedOrigins,
     methods: ['GET', 'POST'],
     credentials: true,
   },
