@@ -30,6 +30,7 @@ export const useWebRTC = ({ type, nickname = 'Stranger', onPartnerLeft, onMatchF
   const [isMatching, setIsMatching] = useState(false);
   const [partnerId, setPartnerId] = useState<string | null>(null);
 
+  const pcRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const localStreamPromiseRef = useRef<Promise<MediaStream> | null>(null);
   const pendingCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
