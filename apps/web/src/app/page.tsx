@@ -128,6 +128,7 @@ export default function LandingPage() {
         tags={interests} 
         onBack={() => setMode('landing')} 
         nickname={nickname}
+        location={location}
         privacyMode={privacyMode}
       />
     );
@@ -284,7 +285,9 @@ export default function LandingPage() {
                       />
                       <MapPin className="w-3.5 h-3.5 text-neutral-500 absolute left-3 top-1/2 -translate-y-1/2 group-focus-within/input:text-blue-500 transition-colors" />
                       {isFetchingLocation && (
-                        <Loader2 className="w-3 h-3 text-blue-500 absolute right-3 top-1/2 -translate-y-1/2 animate-spin" />
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin" />
+                        </div>
                       )}
                     </div>
                   </div>

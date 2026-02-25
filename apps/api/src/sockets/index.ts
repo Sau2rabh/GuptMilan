@@ -12,25 +12,29 @@ export function initSocketEvents(io: Server) {
     // ──────────────────────────────────────────────
     // MATCHING
     // ──────────────────────────────────────────────
-    socket.on('find_partner', async (data: { type: 'text' | 'video'; tags: string[]; nickname?: string }) => {
+    socket.on('find_partner', async (data: { type: 'text' | 'video'; tags: string[]; nickname?: string; location?: string }) => {
       try {
-        const { type, tags, nickname } = data;
-        const matchedSession = await MatchingService.findPartner(socket.id, type, tags, nickname);
+        const { type, tags, nickname, location } = data;
+        const matchedSession = await MatchingService.findPartner(socket.id, type, tags, nickname, location);
 
         if (matchedSession && matchedSession.partnerId) {
           const partnerId = matchedSession.partnerId;
           const partnerNickname = await MatchingService.getNickname(partnerId);
+          const partnerLocation = await MatchingService.getLocation(partnerId);
           const myNickname = await MatchingService.getNickname(socket.id);
+          const myLocation = await MatchingService.getLocation(socket.id);
 
           io.to(socket.id).emit('match_found', {
             partnerId,
             partnerNickname,
+            partnerLocation,
             role: 'offerer',
           });
 
           io.to(partnerId).emit('match_found', {
             partnerId: socket.id,
             partnerNickname: myNickname,
+            partnerLocation: myLocation,
             role: 'answerer',
           });
 

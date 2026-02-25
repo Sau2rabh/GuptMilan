@@ -46,6 +46,7 @@ interface ChatInterfaceProps {
   tags: string[];
   onBack: () => void;
   nickname?: string;
+  location?: string;
   privacyMode?: boolean;
 }
 
@@ -58,7 +59,7 @@ const REPORT_REASONS = [
   'Other',
 ];
 
-export default function ChatInterface({ mode, tags, onBack, nickname, privacyMode }: ChatInterfaceProps) {
+export default function ChatInterface({ mode, tags, onBack, nickname, location, privacyMode }: ChatInterfaceProps) {
   const { toast } = useToast();
   const { socket } = useSocket();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -70,6 +71,7 @@ export default function ChatInterface({ mode, tags, onBack, nickname, privacyMod
   const [selectedReason, setSelectedReason] = useState('');
   const [isReporting, setIsReporting] = useState(false);
   const [partnerNickname, setPartnerNickname] = useState('Stranger');
+  const [partnerLocation, setPartnerLocation] = useState('');
   const [isRemoteBlurred, setIsRemoteBlurred] = useState(privacyMode);
   const [mobileChatOpen, setMobileChatOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -102,8 +104,9 @@ export default function ChatInterface({ mode, tags, onBack, nickname, privacyMod
   } = useWebRTC({
     type: mode,
     nickname,
-    onMatchFound: useCallback((_id: string, pNick: string) => {
+    onMatchFound: useCallback((_id: string, pNick: string, pLoc?: string) => {
       setPartnerNickname(pNick || 'Stranger');
+      setPartnerLocation(pLoc || 'Location hidden');
       setIsRemoteBlurred(privacyMode);
       setMessages([{ id: 'sys-match', sender: 'system', content: `🎉 You are now chatting with ${pNick || 'a stranger'}. Say hi!` }]);
       toast({ title: "Partner Found!", description: `Say hello to ${pNick || 'Stranger'} 👋` });
@@ -112,7 +115,8 @@ export default function ChatInterface({ mode, tags, onBack, nickname, privacyMod
       addSystemMessage('👋 Partner has disconnected.');
       toast({ title: "Partner Left", description: "Finding next match..." });
       nextPartnerRef.current();
-    }, [addSystemMessage, toast])
+    }, [addSystemMessage, toast]),
+    location
   });
 
   useEffect(() => {
@@ -285,9 +289,16 @@ export default function ChatInterface({ mode, tags, onBack, nickname, privacyMod
           </div>
           <div className="flex items-center gap-2 sm:gap-3 overflow-hidden">
             <div className={`w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full shrink-0 shadow-lg transition-colors ${partnerId ? 'bg-green-500 shadow-green-500/50 animate-pulse' : isMatching ? 'bg-yellow-500 shadow-yellow-500/50' : 'bg-neutral-600'}`} />
-            <span className="text-[13px] sm:text-sm font-semibold tracking-wide text-neutral-200 truncate">
-              {partnerId ? partnerNickname : (isMatching ? 'Searching...' : 'Disconnected')}
-            </span>
+            <div className="flex flex-col min-w-0">
+              <span className="text-[13px] sm:text-sm font-semibold tracking-wide text-neutral-200 truncate leading-tight">
+                {partnerId ? partnerNickname : (isMatching ? 'Searching...' : 'Disconnected')}
+              </span>
+              {partnerId && (
+                <span className="text-[10px] text-neutral-500 truncate leading-tight">
+                  {partnerLocation}
+                </span>
+              )}
+            </div>
             {partnerId && tags.length > 0 && (
               <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/20 text-[10px] hidden lg:inline-flex">Matched</Badge>
             )}
@@ -573,8 +584,11 @@ export default function ChatInterface({ mode, tags, onBack, nickname, privacyMod
                   </div>
                 )}
                 <div className="absolute top-4 left-4 z-20">
-                  <Badge variant="secondary" className="bg-blue-600/60 backdrop-blur-md border border-blue-500/30 px-3 py-1 text-xs text-white">
-                    {nickname || 'You'} (Me)
+                  <Badge variant="secondary" className="bg-blue-600/60 backdrop-blur-md border border-blue-500/30 px-3 py-1.5 text-xs text-white">
+                    <div className="flex flex-col items-start leading-tight">
+                      <span>{nickname || 'You'} (Me)</span>
+                      {location && <span className="text-[9px] opacity-70 font-normal">{location}</span>}
+                    </div>
                   </Badge>
                 </div>
                 <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3 z-20 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">

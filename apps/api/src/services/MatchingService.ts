@@ -9,6 +9,7 @@ export interface UserSession {
   status: 'waiting' | 'chatting';
   partnerId: string | null;
   nickname?: string;
+  location?: string;
 }
 
 export class MatchingService {
@@ -18,7 +19,7 @@ export class MatchingService {
   /**
    * Adds a user to the matching queue and attempts to find a partner.
    */
-  static async findPartner(socketId: string, type: 'text' | 'video', tags: string[], nickname: string = 'Stranger'): Promise<UserSession | null> {
+  static async findPartner(socketId: string, type: 'text' | 'video', tags: string[], nickname: string = 'Stranger', location: string = ''): Promise<UserSession | null> {
     const sessionId = uuidv4();
     const session: UserSession = {
       socketId,
@@ -27,6 +28,7 @@ export class MatchingService {
       tags,
       status: 'waiting',
       partnerId: null,
+      location,
     };
 
     // Save session in Redis
@@ -37,6 +39,7 @@ export class MatchingService {
       status: 'waiting',
       partnerId: '',
       nickname,
+      location,
     });
 
     // If tags are provided, strictly match by tags
@@ -133,5 +136,9 @@ export class MatchingService {
 
   static async getNickname(socketId: string): Promise<string> {
     return (await redisClient.hGet(`${this.SESSION_PREFIX}:${socketId}`, 'nickname')) || 'Stranger';
+  }
+
+  static async getLocation(socketId: string): Promise<string> {
+    return (await redisClient.hGet(`${this.SESSION_PREFIX}:${socketId}`, 'location')) || '';
   }
 }

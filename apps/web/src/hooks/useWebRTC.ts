@@ -6,8 +6,9 @@ import { useSocket } from '../context/SocketContext';
 interface WebRTCOptions {
   type: 'text' | 'video';
   nickname?: string;
+  location?: string;
   onPartnerLeft?: () => void;
-  onMatchFound?: (partnerId: string, partnerNickname: string) => void;
+  onMatchFound?: (partnerId: string, partnerNickname: string, partnerLocation?: string) => void;
 }
 
 const ICE_SERVERS: RTCIceServer[] = [
@@ -23,7 +24,7 @@ if (process.env.NEXT_PUBLIC_TURN_URL) {
   });
 }
 
-export const useWebRTC = ({ type, nickname = 'Stranger', onPartnerLeft, onMatchFound }: WebRTCOptions) => {
+export const useWebRTC = ({ type, nickname = 'Stranger', location = '', onPartnerLeft, onMatchFound }: WebRTCOptions) => {
   const { socket } = useSocket();
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
@@ -101,11 +102,11 @@ export const useWebRTC = ({ type, nickname = 'Stranger', onPartnerLeft, onMatchF
         });
     }
 
-    socket.on('match_found', async ({ partnerId: pId, partnerNickname, role }) => {
+    socket.on('match_found', async ({ partnerId: pId, partnerNickname, partnerLocation, role }) => {
       setIsMatching(false);
       setPartnerId(pId);
       partnerIdRef.current = pId;
-      onMatchFoundRef.current?.(pId, partnerNickname || 'Stranger');
+      onMatchFoundRef.current?.(pId, partnerNickname || 'Stranger', partnerLocation);
 
       // Ensure local stream is ready before creating peer connection
       if (type === 'video' && localStreamPromiseRef.current) {
@@ -192,7 +193,7 @@ export const useWebRTC = ({ type, nickname = 'Stranger', onPartnerLeft, onMatchF
     lastTagsRef.current = tags;
     cleanup();
     setIsMatching(true);
-    socket.emit('find_partner', { type, tags, nickname });
+    socket.emit('find_partner', { type, tags, nickname, location });
   };
 
   const nextPartner = useCallback(() => {
@@ -202,8 +203,8 @@ export const useWebRTC = ({ type, nickname = 'Stranger', onPartnerLeft, onMatchF
     }
     cleanup();
     setIsMatching(true);
-    socket.emit('find_partner', { type, tags: lastTagsRef.current, nickname });
-  }, [socket, cleanup, type, nickname]);
+    socket.emit('find_partner', { type, tags: lastTagsRef.current, nickname, location });
+  }, [socket, cleanup, type, nickname, location]);
 
   return { localStream, remoteStream, isMatching, partnerId, findPartner, nextPartner };
 };
