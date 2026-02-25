@@ -32,6 +32,8 @@ export const useWebRTC = ({ type, nickname = 'Stranger', onPartnerLeft, onMatchF
 
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
+  const localStreamPromiseRef = useRef<Promise<MediaStream> | null>(null);
+  const pendingCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
   const onMatchFoundRef = useRef(onMatchFound);
   const onPartnerLeftRef = useRef(onPartnerLeft);
 
@@ -47,6 +49,7 @@ export const useWebRTC = ({ type, nickname = 'Stranger', onPartnerLeft, onMatchF
     }
     setRemoteStream(null);
     setPartnerId(null);
+    pendingCandidatesRef.current = [];
   }, []);
 
   const createPeerConnection = useCallback((toPartnerId: string) => {
@@ -59,7 +62,14 @@ export const useWebRTC = ({ type, nickname = 'Stranger', onPartnerLeft, onMatchF
     };
 
     pc.ontrack = (event) => {
-      setRemoteStream(event.streams[0]);
+      if (event.streams && event.streams[0]) {
+        setRemoteStream(event.streams[0]);
+      } else {
+        // Fallback for browsers that don't provide streams in the event
+        const stream = new MediaStream();
+        stream.addTrack(event.track);
+        setRemoteStream(stream);
+      }
     };
 
     if (localStreamRef.current) {
@@ -75,19 +85,33 @@ export const useWebRTC = ({ type, nickname = 'Stranger', onPartnerLeft, onMatchF
   useEffect(() => {
     if (!socket) return;
 
-    if (type === 'video') {
-       navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+    if (type === 'video' && !localStreamPromiseRef.current) {
+      localStreamPromiseRef.current = navigator.mediaDevices.getUserMedia({ video: true, audio: true })
         .then(stream => {
           setLocalStream(stream);
           localStreamRef.current = stream;
+          return stream;
         })
-        .catch(err => console.error('Error accessing media:', err));
+        .catch(err => {
+          console.error('Error accessing media:', err);
+          throw err;
+        });
     }
 
     socket.on('match_found', async ({ partnerId: pId, partnerNickname, role }) => {
       setIsMatching(false);
       setPartnerId(pId);
       onMatchFoundRef.current?.(pId, partnerNickname || 'Stranger');
+
+      // Ensure local stream is ready before creating peer connection
+      if (type === 'video' && localStreamPromiseRef.current) {
+        try {
+          await localStreamPromiseRef.current;
+        } catch (err) {
+          console.error('Cannot proceed with match: media failed', err);
+          return;
+        }
+      }
 
       const pc = createPeerConnection(pId);
 
@@ -99,8 +123,20 @@ export const useWebRTC = ({ type, nickname = 'Stranger', onPartnerLeft, onMatchF
     });
 
     socket.on('signal_offer', async ({ from, offer }) => {
+      // Ensure local stream is ready
+      if (type === 'video' && localStreamPromiseRef.current) {
+        try { await localStreamPromiseRef.current; } catch (err) { return; }
+      }
+
       const pc = pcRef.current || createPeerConnection(from);
       await pc.setRemoteDescription(new RTCSessionDescription(offer));
+      
+      // Process any pending candidates
+      while (pendingCandidatesRef.current.length > 0) {
+        const candidate = pendingCandidatesRef.current.shift();
+        if (candidate) await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      }
+
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
       socket.emit('signal_answer', { to: from, answer });
@@ -109,12 +145,20 @@ export const useWebRTC = ({ type, nickname = 'Stranger', onPartnerLeft, onMatchF
     socket.on('signal_answer', async ({ answer }) => {
       if (pcRef.current) {
         await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
+        
+        // Process any pending candidates
+        while (pendingCandidatesRef.current.length > 0) {
+          const candidate = pendingCandidatesRef.current.shift();
+          if (candidate) await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+        }
       }
     });
 
     socket.on('signal_ice_candidate', async ({ candidate }) => {
-      if (pcRef.current) {
+      if (pcRef.current && pcRef.current.remoteDescription) {
         await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+      } else {
+        pendingCandidatesRef.current.push(candidate);
       }
     });
 
