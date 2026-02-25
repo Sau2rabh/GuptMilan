@@ -34,6 +34,7 @@ export const useWebRTC = ({ type, nickname = 'Stranger', onPartnerLeft, onMatchF
   const localStreamRef = useRef<MediaStream | null>(null);
   const localStreamPromiseRef = useRef<Promise<MediaStream> | null>(null);
   const pendingCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
+  const lastTagsRef = useRef<string[]>([]);
   const onMatchFoundRef = useRef(onMatchFound);
   const onPartnerLeftRef = useRef(onPartnerLeft);
 
@@ -182,6 +183,7 @@ export const useWebRTC = ({ type, nickname = 'Stranger', onPartnerLeft, onMatchF
 
   const findPartner = (tags: string[]) => {
     if (!socket) return;
+    lastTagsRef.current = tags;
     cleanup();
     setIsMatching(true);
     socket.emit('find_partner', { type, tags, nickname });
@@ -192,7 +194,8 @@ export const useWebRTC = ({ type, nickname = 'Stranger', onPartnerLeft, onMatchF
     socket.emit('next_partner');
     cleanup();
     setIsMatching(true);
-  }, [socket, cleanup]);
+    socket.emit('find_partner', { type, tags: lastTagsRef.current, nickname });
+  }, [socket, cleanup, type, nickname]);
 
   return { localStream, remoteStream, isMatching, partnerId, findPartner, nextPartner };
 };
