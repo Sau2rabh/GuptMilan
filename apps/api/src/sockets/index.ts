@@ -120,7 +120,7 @@ export function initSocketEvents(io: Server) {
         // Disconnect both from this session after a report
         const disconnectedPartnerId = await MatchingService.handleDisconnect(socket.id);
         if (disconnectedPartnerId) {
-          io.to(disconnectedPartnerId).emit('partner_left', { message: 'Session ended.' });
+          io.to(disconnectedPartnerId).emit('partner_left', { from: socket.id, message: 'Session ended.' });
         }
 
         socket.emit('ready_for_next');
@@ -137,7 +137,7 @@ export function initSocketEvents(io: Server) {
     socket.on('next_partner', async () => {
       const partnerId = await MatchingService.handleDisconnect(socket.id);
       if (partnerId) {
-        io.to(partnerId).emit('partner_left', { message: 'Partner skipped.' });
+        io.to(partnerId).emit('partner_left', { from: socket.id, message: 'Partner skipped.' });
       }
       socket.emit('ready_for_next');
     });
@@ -149,7 +149,7 @@ export function initSocketEvents(io: Server) {
       console.log(`❌ Client disconnected: ${socket.id}`);
       const partnerId = await MatchingService.handleDisconnect(socket.id);
       if (partnerId) {
-        io.to(partnerId).emit('partner_left', { message: 'Partner disconnected.' });
+        io.to(partnerId).emit('partner_left', { from: socket.id, message: 'Partner disconnected.' });
       }
     });
   });

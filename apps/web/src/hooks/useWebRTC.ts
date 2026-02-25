@@ -30,10 +30,10 @@ export const useWebRTC = ({ type, nickname = 'Stranger', onPartnerLeft, onMatchF
   const [isMatching, setIsMatching] = useState(false);
   const [partnerId, setPartnerId] = useState<string | null>(null);
 
-  const pcRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const localStreamPromiseRef = useRef<Promise<MediaStream> | null>(null);
   const pendingCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
+  const partnerIdRef = useRef<string | null>(null);
   const lastTagsRef = useRef<string[]>([]);
   const onMatchFoundRef = useRef(onMatchFound);
   const onPartnerLeftRef = useRef(onPartnerLeft);
@@ -50,6 +50,7 @@ export const useWebRTC = ({ type, nickname = 'Stranger', onPartnerLeft, onMatchF
     }
     setRemoteStream(null);
     setPartnerId(null);
+    partnerIdRef.current = null;
     pendingCandidatesRef.current = [];
   }, []);
 
@@ -102,6 +103,7 @@ export const useWebRTC = ({ type, nickname = 'Stranger', onPartnerLeft, onMatchF
     socket.on('match_found', async ({ partnerId: pId, partnerNickname, role }) => {
       setIsMatching(false);
       setPartnerId(pId);
+      partnerIdRef.current = pId;
       onMatchFoundRef.current?.(pId, partnerNickname || 'Stranger');
 
       // Ensure local stream is ready before creating peer connection
@@ -163,9 +165,12 @@ export const useWebRTC = ({ type, nickname = 'Stranger', onPartnerLeft, onMatchF
       }
     });
 
-    socket.on('partner_left', () => {
-      cleanup();
-      onPartnerLeftRef.current?.();
+    socket.on('partner_left', (data?: { from?: string }) => {
+      // Only cleanup if the signal is from the active partner or we don't have an ID to check
+      if (!data?.from || data.from === partnerIdRef.current) {
+        cleanup();
+        onPartnerLeftRef.current?.();
+      }
     });
 
     return () => {
@@ -191,7 +196,9 @@ export const useWebRTC = ({ type, nickname = 'Stranger', onPartnerLeft, onMatchF
 
   const nextPartner = useCallback(() => {
     if (!socket) return;
-    socket.emit('next_partner');
+    if (partnerIdRef.current) {
+      socket.emit('next_partner');
+    }
     cleanup();
     setIsMatching(true);
     socket.emit('find_partner', { type, tags: lastTagsRef.current, nickname });

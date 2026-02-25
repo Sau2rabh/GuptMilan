@@ -111,7 +111,7 @@ export default function ChatInterface({ mode, tags, onBack, nickname, privacyMod
     onPartnerLeft: useCallback(() => {
       addSystemMessage('👋 Partner has disconnected.');
       toast({ title: "Partner Left", description: "Finding next match..." });
-      setTimeout(() => nextPartnerRef.current(), 2000);
+      nextPartnerRef.current();
     }, [addSystemMessage, toast])
   });
 
