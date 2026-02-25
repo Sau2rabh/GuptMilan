@@ -77,6 +77,8 @@ export default function ChatInterface({ mode, tags, onBack, nickname, privacyMod
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const mobileLocalVideoRef = useRef<HTMLVideoElement>(null);
+  const mobileRemoteVideoRef = useRef<HTMLVideoElement>(null);
 
   // Draggable PiP state
   const pipRef = useRef<HTMLDivElement>(null);
@@ -123,14 +125,16 @@ export default function ChatInterface({ mode, tags, onBack, nickname, privacyMod
   }, []);
 
   useEffect(() => {
-    if (localVideoRef.current && localStream) {
-      localVideoRef.current.srcObject = localStream;
+    if (localStream) {
+      if (localVideoRef.current) localVideoRef.current.srcObject = localStream;
+      if (mobileLocalVideoRef.current) mobileLocalVideoRef.current.srcObject = localStream;
     }
   }, [localStream]);
 
   useEffect(() => {
-    if (remoteVideoRef.current && remoteStream) {
-      remoteVideoRef.current.srcObject = remoteStream;
+    if (remoteStream) {
+      if (remoteVideoRef.current) remoteVideoRef.current.srcObject = remoteStream;
+      if (mobileRemoteVideoRef.current) mobileRemoteVideoRef.current.srcObject = remoteStream;
     }
   }, [remoteStream]);
 
@@ -311,7 +315,7 @@ export default function ChatInterface({ mode, tags, onBack, nickname, privacyMod
             {remoteStream ? (
               <>
                 <video
-                  ref={remoteVideoRef}
+                  ref={mobileRemoteVideoRef}
                   autoPlay
                   playsInline
                   className={`w-full h-full object-cover transition-all duration-700 ${isRemoteBlurred ? 'blur-[50px] scale-110' : ''}`}
@@ -365,7 +369,7 @@ export default function ChatInterface({ mode, tags, onBack, nickname, privacyMod
           >
             {localStream ? (
               <video
-                ref={localVideoRef}
+                ref={mobileLocalVideoRef}
                 autoPlay
                 playsInline
                 muted
