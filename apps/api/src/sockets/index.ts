@@ -7,8 +7,6 @@ import { censorMessage } from '../utils/profanityFilter';
 
 export function initSocketEvents(io: Server) {
   io.on('connection', (socket: Socket) => {
-    console.log(`🔌 Client connected: ${socket.id}`);
-
     // ──────────────────────────────────────────────
     // MATCHING
     // ──────────────────────────────────────────────
@@ -150,7 +148,6 @@ export function initSocketEvents(io: Server) {
     // DISCONNECT
     // ──────────────────────────────────────────────
     socket.on('disconnect', async (reason) => {
-      console.log(`❌ Client disconnected: ${socket.id}. Reason: ${reason}`);
       const partnerId = await MatchingService.handleDisconnect(socket.id);
       if (partnerId) {
         io.to(partnerId).emit('partner_left', { from: socket.id, message: 'Partner disconnected.' });
