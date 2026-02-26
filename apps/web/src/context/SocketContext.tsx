@@ -26,7 +26,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     const socketInstance = io(apiUrl, {
       withCredentials: true,
       autoConnect: true,
-      transports: ['websocket', 'polling'],
+      transports: ['websocket'], // Force websocket only to stop polling noise
       reconnection: true,
       reconnectionAttempts: 10,
       reconnectionDelay: 1000,
@@ -36,7 +36,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     socketRef.current = socketInstance;
 
     socketInstance.on('connect', () => {
-      console.log('✅ Connected to signaling server with ID:', socketInstance.id);
+      console.log('✅ Connected to signaling server with ID:', socketInstance.id, 'Transport:', socketInstance.io.engine.transport.name);
       setConnected(true);
     });
 
