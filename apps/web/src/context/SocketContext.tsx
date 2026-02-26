@@ -12,6 +12,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     if (socketRef.current) return;
 
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
     const socketInstance = io(apiUrl, {
       withCredentials: true,
       autoConnect: true,
