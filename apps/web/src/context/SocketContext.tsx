@@ -12,13 +12,10 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     if (socketRef.current) return;
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
-    console.log('📡 Initializing socket connection for HMR stability:', apiUrl);
-
     const socketInstance = io(apiUrl, {
       withCredentials: true,
       autoConnect: true,
-      transports: ['websocket'],
+      transports: ['polling', 'websocket'], // Restore polling for robustness
       reconnection: true,
       reconnectionAttempts: 10,
       reconnectionDelay: 1000,
@@ -28,16 +25,14 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     socketRef.current = socketInstance;
 
     socketInstance.on('connect', () => {
-      console.log('✅ Connected to signaling server with ID:', socketInstance.id, 'Transport:', socketInstance.io.engine.transport.name);
       setConnected(true);
     });
 
     socketInstance.on('connect_error', (err) => {
-      console.error('❌ Socket connection error:', err.message);
+      // Silently handle errors to keep console clean
     });
 
     socketInstance.on('disconnect', (reason) => {
-      console.log('❌ Disconnected from signaling server. Reason:', reason);
       setConnected(false);
       if (reason === 'io server disconnect') {
         socketInstance.connect();
