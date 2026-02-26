@@ -1,16 +1,8 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
-
-interface SocketContextType {
-  socket: Socket | null;
-  connected: boolean;
-}
-
-const SocketContext = createContext<SocketContextType>({ socket: null, connected: false });
-
-export const useSocket = () => useContext(SocketContext);
+import { SocketContext } from './SocketContextInstance';
 
 export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -21,12 +13,12 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     if (socketRef.current) return;
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
-    console.log('📡 Initializing socket connection to:', apiUrl);
+    console.log('📡 Initializing socket connection for HMR stability:', apiUrl);
 
     const socketInstance = io(apiUrl, {
       withCredentials: true,
       autoConnect: true,
-      transports: ['websocket'], // Force websocket only to stop polling noise
+      transports: ['websocket'],
       reconnection: true,
       reconnectionAttempts: 10,
       reconnectionDelay: 1000,
@@ -47,7 +39,6 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     socketInstance.on('disconnect', (reason) => {
       console.log('❌ Disconnected from signaling server. Reason:', reason);
       setConnected(false);
-      // Auto-reconnect if server disconnected us
       if (reason === 'io server disconnect') {
         socketInstance.connect();
       }

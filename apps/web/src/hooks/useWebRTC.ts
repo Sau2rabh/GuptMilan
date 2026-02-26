@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { useSocket } from '../context/SocketContext';
+import { useSocket } from './useSocket';
 
 interface WebRTCOptions {
   type: 'text' | 'video';
@@ -13,16 +13,8 @@ interface WebRTCOptions {
 
 const ICE_SERVERS: RTCIceServer[] = [
   { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' },
 ];
-
-// Add TURN server if provided in environment variables
-if (process.env.NEXT_PUBLIC_TURN_URL) {
-  ICE_SERVERS.push({
-    urls: process.env.NEXT_PUBLIC_TURN_URL,
-    username: process.env.NEXT_PUBLIC_TURN_USERNAME,
-    credential: process.env.NEXT_PUBLIC_TURN_PASSWORD,
-  });
-}
 
 export const useWebRTC = ({ type, nickname = 'Stranger', location = '', onPartnerLeft, onMatchFound }: WebRTCOptions) => {
   const { socket } = useSocket();
@@ -67,12 +59,8 @@ export const useWebRTC = ({ type, nickname = 'Stranger', location = '', onPartne
 
     pc.ontrack = (event) => {
       if (event.streams && event.streams[0]) {
+        console.log('📡 Received remote stream track');
         setRemoteStream(event.streams[0]);
-      } else {
-        // Fallback for browsers that don't provide streams in the event
-        const stream = new MediaStream();
-        stream.addTrack(event.track);
-        setRemoteStream(stream);
       }
     };
 
@@ -85,6 +73,24 @@ export const useWebRTC = ({ type, nickname = 'Stranger', location = '', onPartne
     pcRef.current = pc;
     return pc;
   }, [socket]);
+
+  const findPartner = useCallback((tags: string[]) => {
+    if (!socket) return;
+    lastTagsRef.current = tags;
+    cleanup();
+    setIsMatching(true);
+    socket.emit('find_partner', { type, tags, nickname, location });
+  }, [socket, cleanup, type, nickname, location]);
+
+  const nextPartner = useCallback(() => {
+    if (!socket) return;
+    if (partnerIdRef.current) {
+      socket.emit('next_partner');
+    }
+    cleanup();
+    setIsMatching(true);
+    socket.emit('find_partner', { type, tags: lastTagsRef.current, nickname, location });
+  }, [socket, cleanup, type, nickname, location]);
 
   useEffect(() => {
     if (!socket) return;
@@ -102,13 +108,12 @@ export const useWebRTC = ({ type, nickname = 'Stranger', location = '', onPartne
         });
     }
 
-    socket.on('match_found', async ({ partnerId: pId, partnerNickname, partnerLocation, role }) => {
+    socket.on('match_found', async ({ partnerId: pId, partnerNickname, partnerLocation, role }: any) => {
       setIsMatching(false);
       setPartnerId(pId);
       partnerIdRef.current = pId;
       onMatchFoundRef.current?.(pId, partnerNickname || 'Stranger', partnerLocation);
 
-      // Ensure local stream is ready before creating peer connection
       if (type === 'video' && localStreamPromiseRef.current) {
         try {
           await localStreamPromiseRef.current;
@@ -127,8 +132,7 @@ export const useWebRTC = ({ type, nickname = 'Stranger', location = '', onPartne
       }
     });
 
-    socket.on('signal_offer', async ({ from, offer }) => {
-      // Ensure local stream is ready
+    socket.on('signal_offer', async ({ from, offer }: any) => {
       if (type === 'video' && localStreamPromiseRef.current) {
         try { await localStreamPromiseRef.current; } catch (err) { return; }
       }
@@ -136,7 +140,6 @@ export const useWebRTC = ({ type, nickname = 'Stranger', location = '', onPartne
       const pc = pcRef.current || createPeerConnection(from);
       await pc.setRemoteDescription(new RTCSessionDescription(offer));
       
-      // Process any pending candidates
       while (pendingCandidatesRef.current.length > 0) {
         const candidate = pendingCandidatesRef.current.shift();
         if (candidate) await pc.addIceCandidate(new RTCIceCandidate(candidate));
@@ -147,11 +150,10 @@ export const useWebRTC = ({ type, nickname = 'Stranger', location = '', onPartne
       socket.emit('signal_answer', { to: from, answer });
     });
 
-    socket.on('signal_answer', async ({ answer }) => {
+    socket.on('signal_answer', async ({ answer }: any) => {
       if (pcRef.current) {
         await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
         
-        // Process any pending candidates
         while (pendingCandidatesRef.current.length > 0) {
           const candidate = pendingCandidatesRef.current.shift();
           if (candidate) await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
@@ -159,16 +161,19 @@ export const useWebRTC = ({ type, nickname = 'Stranger', location = '', onPartne
       }
     });
 
-    socket.on('signal_ice_candidate', async ({ candidate }) => {
+    socket.on('signal_ice_candidate', async ({ candidate }: any) => {
       if (pcRef.current && pcRef.current.remoteDescription) {
-        await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+        try {
+          await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (err) {
+          console.error('Error adding ICE candidate:', err);
+        }
       } else {
         pendingCandidatesRef.current.push(candidate);
       }
     });
 
     socket.on('partner_left', (data?: { from?: string }) => {
-      // Only cleanup if the signal is from the active partner or we don't have an ID to check
       if (!data?.from || data.from === partnerIdRef.current) {
         cleanup();
         onPartnerLeftRef.current?.();
@@ -184,27 +189,11 @@ export const useWebRTC = ({ type, nickname = 'Stranger', location = '', onPartne
       cleanup();
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach(track => track.stop());
+        localStreamRef.current = null;
+        localStreamPromiseRef.current = null;
       }
     };
-  }, [socket, type, createPeerConnection, cleanup]);
-
-  const findPartner = (tags: string[]) => {
-    if (!socket) return;
-    lastTagsRef.current = tags;
-    cleanup();
-    setIsMatching(true);
-    socket.emit('find_partner', { type, tags, nickname, location });
-  };
-
-  const nextPartner = useCallback(() => {
-    if (!socket) return;
-    if (partnerIdRef.current) {
-      socket.emit('next_partner');
-    }
-    cleanup();
-    setIsMatching(true);
-    socket.emit('find_partner', { type, tags: lastTagsRef.current, nickname, location });
-  }, [socket, cleanup, type, nickname, location]);
+  }, [socket, type, createPeerConnection, cleanup, nickname, location]);
 
   return { localStream, remoteStream, isMatching, partnerId, findPartner, nextPartner };
 };
