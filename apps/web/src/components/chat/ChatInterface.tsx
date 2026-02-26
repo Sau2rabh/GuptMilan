@@ -452,13 +452,13 @@ export default function ChatInterface({ mode, tags, onBack, nickname, location, 
             className={`absolute inset-x-0 bottom-0 z-50 transition-transform duration-500 cubic-bezier(0.32, 0.72, 0, 1) ${mobileChatOpen ? 'translate-y-0' : 'translate-y-full'}`}
             style={{ height: '75dvh' }}
           >
-            <div className="h-full bg-black/40 backdrop-blur-2xl flex flex-col rounded-t-[32px] border-t border-white/10 shadow-[0_-20px_80px_rgba(0,0,0,0.9)] overflow-hidden">
+            <div className="h-full bg-black/80 backdrop-blur-[100px] flex flex-col rounded-t-[40px] border-t border-white/20 shadow-[0_-20px_100px_rgba(0,0,0,1)] overflow-hidden">
               {/* Glossy Header Area */}
               <div className="flex items-center justify-between px-6 pt-4 pb-2 shrink-0 relative">
                 <div className="w-12 h-1.5 bg-white/20 rounded-full absolute left-1/2 -translate-x-1/2 top-3 opacity-50" />
                 <div className="flex items-center gap-2 mt-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                  <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/50">Live Chat</span>
+                  <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/80">Live Chat</span>
                 </div>
                 <Button
                   variant="ghost" size="icon"
@@ -484,7 +484,7 @@ export default function ChatInterface({ mode, tags, onBack, nickname, location, 
                       value={inputMessage}
                       onChange={handleInputChange}
                       disabled={!partnerId}
-                      className="bg-black/40 border-white/10 focus:border-blue-500/50 transition-all rounded-2xl h-12 px-5 text-sm disabled:opacity-50 text-white placeholder:text-white/20"
+                      className="bg-white/5 border-white/10 focus:border-blue-500/50 transition-all rounded-2xl h-12 px-5 text-sm disabled:opacity-50 text-white placeholder:text-white/30"
                       autoFocus={mobileChatOpen}
                     />
                   </div>
@@ -503,13 +503,13 @@ export default function ChatInterface({ mode, tags, onBack, nickname, location, 
         </div>
       ) : (
         // Text mode mobile
-        <div className="md:hidden flex-1 bg-[#0f1117]/95 backdrop-blur-3xl flex flex-col overflow-hidden">
-          <ScrollArea className="flex-1 p-4">
-            <div className="space-y-4">
+        <div className="md:hidden flex-1 bg-black/90 backdrop-blur-[100px] flex flex-col overflow-hidden">
+          <ScrollArea className="flex-1 p-5">
+            <div className="space-y-5">
               <MessageBubbles />
             </div>
           </ScrollArea>
-          <div className="p-4 bg-black/40 border-t border-white/5 space-y-3 backdrop-blur-md">
+          <div className="p-5 bg-white/[0.03] border-t border-white/10 space-y-4 backdrop-blur-3xl">
             <form onSubmit={sendMessage} className="flex gap-2">
               <Input
                 placeholder={partnerId ? "Type a message..." : "Waiting for connection..."}
