@@ -17,17 +17,21 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
     console.log('📡 Attempting connection to:', apiUrl);
 
     const socketInstance = io(apiUrl, {
       withCredentials: true,
       autoConnect: true,
-      transports: ['websocket', 'polling'], // Try WebSocket first — more reliable on Windows
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000,
+      timeout: 20000,
     });
 
     socketInstance.on('connect', () => {
-      console.log('✅ Connected to signaling server');
+      console.log('✅ Connected to signaling server with ID:', socketInstance.id);
       setConnected(true);
     });
 
@@ -35,14 +39,21 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       console.error('❌ Socket connection error:', err.message);
     });
 
-    socketInstance.on('disconnect', () => {
-      console.log('❌ Disconnected from signaling server');
+    socketInstance.on('disconnect', (reason) => {
+      console.log('❌ Disconnected from signaling server. Reason:', reason);
       setConnected(false);
+      if (reason === 'io server disconnect') {
+        socketInstance.connect();
+      }
     });
 
     setSocket(socketInstance);
 
     return () => {
+      console.log('🧹 Cleaning up socket connection');
+      socketInstance.off('connect');
+      socketInstance.off('connect_error');
+      socketInstance.off('disconnect');
       socketInstance.disconnect();
     };
   }, []);

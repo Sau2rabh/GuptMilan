@@ -452,7 +452,8 @@ export default function ChatInterface({ mode, tags, onBack, nickname, location, 
             className={`absolute inset-x-0 bottom-0 z-50 transition-transform duration-500 cubic-bezier(0.32, 0.72, 0, 1) ${mobileChatOpen ? 'translate-y-0' : 'translate-y-full'}`}
             style={{ height: '75dvh' }}
           >
-            <div className="h-full bg-black/80 backdrop-blur-[100px] flex flex-col rounded-t-[40px] border-t border-white/20 shadow-[0_-20px_100px_rgba(0,0,0,1)] overflow-hidden">
+            <div className="h-full bg-black/80 backdrop-blur-[100px] backdrop-saturate-150 flex flex-col rounded-t-[40px] border-t border-white/20 shadow-[0_-20px_100px_rgba(0,0,0,1)] overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
               {/* Glossy Header Area */}
               <div className="flex items-center justify-between px-6 pt-4 pb-2 shrink-0 relative">
                 <div className="w-12 h-1.5 bg-white/20 rounded-full absolute left-1/2 -translate-x-1/2 top-3 opacity-50" />
@@ -503,8 +504,9 @@ export default function ChatInterface({ mode, tags, onBack, nickname, location, 
         </div>
       ) : (
         // Text mode mobile
-        <div className="md:hidden flex-1 bg-black/90 backdrop-blur-[100px] flex flex-col overflow-hidden">
-          <ScrollArea className="flex-1 p-5">
+        <div className="md:hidden flex-1 bg-black/90 backdrop-blur-[120px] backdrop-saturate-150 flex flex-col overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
+          <ScrollArea className="flex-1 p-5 relative z-10">
             <div className="space-y-5">
               <MessageBubbles />
             </div>
