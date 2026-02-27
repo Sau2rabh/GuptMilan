@@ -31,14 +31,16 @@ import { Separator } from "@/components/ui/separator";
 import ChatInterface from '@/components/chat/ChatInterface';
 import { useEffect } from 'react';
 import Image from 'next/image';
+import { useToast } from "@/hooks/use-toast";
 
 export default function LandingPage() {
+  const { toast } = useToast();
   const [interests, setInterests] = useState<string[]>([]);
   const [currentInterest, setCurrentInterest] = useState('');
   const [mode, setMode] = useState<'landing' | 'video' | 'text'>('landing');
 
   // Settings State
-  const [nickname, setNickname] = useState("Stranger");
+  const [nickname, setNickname] = useState("");
   const [location, setLocation] = useState("");
   const [isFetchingLocation, setIsFetchingLocation] = useState(false);
   const [privacyMode, setPrivacyMode] = useState(false);
@@ -119,6 +121,18 @@ export default function LandingPage() {
 
   const removeInterest = (tag: string) => {
     setInterests(interests.filter(i => i !== tag));
+  };
+
+  const handleChatStart = (selectedMode: 'video' | 'text') => {
+    if (!nickname.trim() || !location.trim()) {
+      toast({
+        title: "fill the required details",
+        description: "Nickname and Location are required to start chatting.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setMode(selectedMode);
   };
 
   if (mode !== 'landing') {
@@ -335,20 +349,20 @@ export default function LandingPage() {
 
               <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <Button 
-                  onClick={() => setMode('text')}
-                  className="h-20 sm:h-28 flex flex-col gap-1.5 sm:gap-3 rounded-2xl transition-all duration-300 border group/btn animate-glow-blue-1"
+                  onClick={() => handleChatStart('text')}
+                  className={`h-20 sm:h-28 flex flex-col gap-1.5 sm:gap-3 rounded-2xl transition-all duration-300 border ${!nickname.trim() || !location.trim() ? 'opacity-50 cursor-not-allowed hover:bg-transparent' : 'group/btn animate-glow-blue-1'}`}
                   variant="ghost"
                 >
-                  <MessageSquare className="w-5 h-5 sm:w-7 sm:h-7 text-neutral-400 group-hover/btn:text-white group-hover/btn:scale-110 transition-all duration-300" />
-                  <span className="font-semibold text-xs sm:text-sm text-neutral-300 group-hover/btn:text-white">Text Chat</span>
+                  <MessageSquare className={`w-5 h-5 sm:w-7 sm:h-7 text-neutral-400 transition-all duration-300 ${!nickname.trim() || !location.trim() ? '' : 'group-hover/btn:text-white group-hover/btn:scale-110'}`} />
+                  <span className={`font-semibold text-xs sm:text-sm text-neutral-300 ${!nickname.trim() || !location.trim() ? '' : 'group-hover/btn:text-white'}`}>Text Chat</span>
                 </Button>
                 <Button 
-                  onClick={() => setMode('video')}
-                  className="h-20 sm:h-28 flex flex-col gap-1.5 sm:gap-3 rounded-2xl transition-all duration-300 border group/btn animate-glow-blue-2"
+                  onClick={() => handleChatStart('video')}
+                  className={`h-20 sm:h-28 flex flex-col gap-1.5 sm:gap-3 rounded-2xl transition-all duration-300 border ${!nickname.trim() || !location.trim() ? 'opacity-50 cursor-not-allowed hover:bg-transparent' : 'group/btn animate-glow-blue-2'}`}
                   variant="ghost"
                 >
-                  <Video className="w-5 h-5 sm:w-7 sm:h-7 text-neutral-400 group-hover/btn:text-white group-hover/btn:scale-110 transition-all duration-300" />
-                  <span className="font-semibold text-xs sm:text-sm text-neutral-300 group-hover/btn:text-white">Video Chat</span>
+                  <Video className={`w-5 h-5 sm:w-7 sm:h-7 text-neutral-400 transition-all duration-300 ${!nickname.trim() || !location.trim() ? '' : 'group-hover/btn:text-white group-hover/btn:scale-110'}`} />
+                  <span className={`font-semibold text-xs sm:text-sm text-neutral-300 ${!nickname.trim() || !location.trim() ? '' : 'group-hover/btn:text-white'}`}>Video Chat</span>
                 </Button>
               </div>
 
