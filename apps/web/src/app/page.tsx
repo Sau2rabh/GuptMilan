@@ -32,12 +32,15 @@ import ChatInterface from '@/components/chat/ChatInterface';
 import { useEffect } from 'react';
 import Image from 'next/image';
 import { useToast } from "@/hooks/use-toast";
+import { useSocket } from '@/hooks/useSocket';
 
 export default function LandingPage() {
   const { toast } = useToast();
+  const { socket } = useSocket();
   const [interests, setInterests] = useState<string[]>([]);
   const [currentInterest, setCurrentInterest] = useState('');
   const [mode, setMode] = useState<'landing' | 'video' | 'text'>('landing');
+  const [onlineCount, setOnlineCount] = useState<number | null>(null);
 
   // Settings State
   const [nickname, setNickname] = useState("");
@@ -69,6 +72,14 @@ export default function LandingPage() {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, []);
+
+  // Listen for real-time online count from server
+  useEffect(() => {
+    if (!socket) return;
+    const handleOnlineCount = (count: number) => setOnlineCount(count);
+    socket.on('online_count', handleOnlineCount);
+    return () => { socket.off('online_count', handleOnlineCount); };
+  }, [socket]);
 
   const fetchLocation = () => {
     if (!navigator.geolocation) {
@@ -245,7 +256,9 @@ export default function LandingPage() {
               <div className="p-2 rounded-lg sm:rounded-xl bg-blue-500/10">
                 <Users className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
               </div>
-              <span className="font-medium text-[11px] sm:text-sm text-neutral-300">50k+ Online</span>
+              <span className="font-medium text-[11px] sm:text-sm text-neutral-300">
+                {onlineCount !== null ? `${onlineCount.toLocaleString()} Online` : '... Online'}
+              </span>
             </div>
             <div className="flex items-center gap-2 sm:gap-3 bg-white/5 sm:bg-transparent p-2.5 sm:p-0 rounded-xl sm:rounded-none">
               <div className="p-2 rounded-lg sm:rounded-xl bg-green-500/10">

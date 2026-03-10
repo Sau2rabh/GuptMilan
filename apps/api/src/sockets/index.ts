@@ -6,7 +6,14 @@ import { isSpamming } from '../middleware/security';
 import { censorMessage } from '../utils/profanityFilter';
 
 export function initSocketEvents(io: Server) {
+  const broadcastOnlineCount = () => {
+    const count = io.engine.clientsCount;
+    io.emit('online_count', count);
+  };
+
   io.on('connection', (socket: Socket) => {
+    // Broadcast updated count to everyone on new connection
+    broadcastOnlineCount();
     // ──────────────────────────────────────────────
     // MATCHING
     // ──────────────────────────────────────────────
@@ -152,6 +159,8 @@ export function initSocketEvents(io: Server) {
       if (partnerId) {
         io.to(partnerId).emit('partner_left', { from: socket.id, message: 'Partner disconnected.' });
       }
+      // Broadcast updated count after disconnect
+      broadcastOnlineCount();
     });
   });
 }
