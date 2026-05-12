@@ -52,7 +52,7 @@ const io = new Server(httpServer, {
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'ok', message: 'GuptMilan API is running' });
+  res.status(200).json({ status: 'ok', message: 'Veilo API is running' });
 });
 
 async function startServer() {
@@ -63,7 +63,7 @@ async function startServer() {
 
   // 2. Start HTTP server FIRST — always available
   httpServer.listen(PORT, () => {
-    console.log(`🚀 GuptMilan server running on port ${PORT}`);
+    console.log(`🚀 Veilo server running on port ${PORT}`);
   });
 
   // 3. Connect to Redis in background (non-blocking)

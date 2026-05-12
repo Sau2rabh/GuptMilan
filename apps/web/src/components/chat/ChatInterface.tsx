@@ -285,7 +285,7 @@ export default function ChatInterface({ mode, tags, onBack, nickname, location, 
           </Button>
           <div className="hidden sm:flex items-center gap-2 mr-2">
             <Image src="/logo.png" alt="GM" width={24} height={24} className="rounded-lg shadow-lg shadow-blue-500/20" />
-            <span className="text-[10px] font-black tracking-tighter text-blue-500">GUPTMILAN</span>
+            <span className="text-[10px] font-black tracking-tighter text-blue-500">VEILO</span>
           </div>
           <div className="flex items-center gap-2 sm:gap-3 overflow-hidden">
             <div className={`w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full shrink-0 shadow-lg transition-colors ${partnerId ? 'bg-green-500 shadow-green-500/50 animate-pulse' : isMatching ? 'bg-yellow-500 shadow-yellow-500/50' : 'bg-neutral-600'}`} />

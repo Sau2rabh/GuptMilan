@@ -7,7 +7,7 @@ import { Toaster } from "@/components/ui/toaster";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "GuptMilan | Anonymous Random Video & Text Chat",
+  title: "Veilo | Anonymous Random Video & Text Chat",
   description: "Connect instantly with strangers around the world for anonymous video and text chat. Safer, smarter, and faster.",
 };
 

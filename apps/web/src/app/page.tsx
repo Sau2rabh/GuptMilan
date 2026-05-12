@@ -172,13 +172,13 @@ export default function LandingPage() {
           <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg shadow-blue-600/30 overflow-hidden">
             <Image 
               src="/logo.png" 
-              alt="GuptMilan Logo" 
+              alt="Veilo Logo" 
               width={48} 
               height={48} 
               className="w-full h-full object-cover scale-110"
             />
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Gupt<span className="text-blue-500">Milan</span></h1>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Ve<span className="text-blue-500">ilo</span></h1>
         </div>
 
         <Dialog>
@@ -244,7 +244,7 @@ export default function LandingPage() {
             </Badge>
             <h2 className="text-3xl sm:text-6xl lg:text-7xl font-black leading-[1.1] tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-white/70">
               Meet <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">Strangers</span>, <br />
-              Stay <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">Gupt</span>.
+              Stay <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">Veilo</span>.
             </h2>
             <p className="text-muted-foreground text-base sm:text-lg lg:text-xl max-w-lg mx-auto xl:mx-0 leading-relaxed">
               Instant video and text chat with real people anywhere in the world. No signup, no tracking, just pure connection.
